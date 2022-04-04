@@ -1,9 +1,9 @@
 
 // Test server on cloud
-// export const BASE_PATH = 'https://performance-test.kb.us-central1.gcp.cloud.es.io:9243/';
+export const BASE_PATH = 'https://performance-test.kb.us-central1.gcp.cloud.es.io:9243/';
 
 // Spencers off cloud instance
-export const BASE_PATH = 'http://104.198.74.29';
+// export const BASE_PATH = 'http://104.198.74.29';
 
 
 const BUNDLE_ID = '50609';

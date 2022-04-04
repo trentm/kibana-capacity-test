@@ -1,10 +1,10 @@
 import { TEST_FILES, BASE_PATH } from './test-data.js';
 import axios from 'axios';
 
-const intervalLength = 60 * 1000;
-const requestsPerBatch = 10;
-const latencyMaxFactor = 200;
-const TEST_RPMS = [100, 200, 400, 600, 1000, 1200, 1500, 1800, 2000, 2200, 2500, 3000, 4000, 5000, 6000, 7000, 8000, 10000, 15000, 20000];
+const INTERVAL_LENGTH_MINS = 0.5;
+const REQUESTS_PER_BATCH = 10;
+const LATENCY_MAX_FACTOR = 200;
+const TEST_RPMS = [500, 1000, 1200, 1500, 1800, 2000, 2200, 2500, 3000, 4000, 5000, 6000, 7000, 8000, 10000, 15000, 20000];
 
 const TOP_LEVEL_TIMEOUT = 'top level timeout';
 
@@ -117,32 +117,38 @@ async function getStatusCodesFromResponses(timingsPromises) {
  * 
  * @param {*} rpm 
  * @param {*} configObject 
- * @throws A TOP_LEVEL_TIMEOUT error if responses didn't return within intervalLength * latencyMaxFactor 
+ * @throws A TOP_LEVEL_TIMEOUT error if responses didn't return within INTERVAL_LENGTH_MINS * LATENCY_MAX_FACTOR 
  * @returns An object with average response times per status code
  */
 function runIntervalsForDuration(rpm, configObject) {
-    const intervalDuration = intervalLength / rpm;
+    // target requests per second
+    const rps = rpm / 60;
+    // interval duration in seconds
+    const intervalDurationSec = REQUESTS_PER_BATCH / rps;
+    // Overall number of requests to run
+    const requestsToRun = INTERVAL_LENGTH_MINS * rpm;
+    // console.log(`batch ${REQUESTS_PER_BATCH}, rpm ${rpm}, interval duration ${intervalDurationSec}`);
     return new Promise(async (resolve, reject) => {
         let intervalCount = 0;
-        const requestsToRun = intervalLength / (60*1000) * rpm
         const timingsPromises = [];
         let intervalHandle = undefined;
         const cancelTokenSource = axios.CancelToken.source();
 
+        // abort after 30 seconds
         const abortTimeoutHandler = setTimeout(() => {
             console.error('GLOBAL TIMEOUT')
             cancelTokenSource.cancel();
             clearInterval(intervalHandle);
             reject(new Error(TOP_LEVEL_TIMEOUT));
         },
-            intervalLength * latencyMaxFactor
+            INTERVAL_LENGTH_MINS * 1.5 * 60000
         );
 
         const intervalHandler = async () => {
-            process.stdout.write(`Interval ${intervalCount} after ${intervalCount * intervalDuration} sending out ${requestsPerBatch*intervalCount} requests\r`);
+            process.stdout.write(`Interval ${intervalCount}: ${Math.floor(intervalCount * intervalDurationSec* 10) / 10}s, ${REQUESTS_PER_BATCH*intervalCount} requests\r`);
             intervalCount++;
 
-            for (let i = 0; i < requestsPerBatch; i++) {
+            for (let i = 0; i < REQUESTS_PER_BATCH; i++) {
                 timingsPromises.push(getRequestPromise(configObject, cancelTokenSource));
             }
 
@@ -153,7 +159,7 @@ function runIntervalsForDuration(rpm, configObject) {
                 const res = await getStatusCodesFromResponses(timingsPromises);
                 resolve(res);
             } else if (!intervalHandle) {
-                intervalHandle = setInterval(intervalHandler, intervalDuration);                
+                intervalHandle = setInterval(intervalHandler, intervalDurationSec * 1000);                
             }
         };
 
@@ -215,7 +221,7 @@ async function initTest(testName = 'login') {
 
     do {
         try {
-            console.log(`Running test for ${rpm} rpm`)
+            console.log(`Running test for ${rpm} rpm, interval duration is ${INTERVAL_LENGTH_MINS} mins`)
             latestBenchMark = benchmarks[rpm] = await runIntervalsForDuration(rpm, testData);
             console.log(`${rpm} rpm, ${latestBenchMark[200].avg} ms`)
             rpm = TEST_RPMS[i++];
@@ -237,8 +243,8 @@ async function initTest(testName = 'login') {
         benchmarks[TEST_RPMS[0]][200] !== undefined && 
         // The last benchmark had any successful responses
         latestBenchMark[200] && 
-        // Latency increased by latencyMaxFactor
-        (latestBenchMark[200].avg / latencyMaxFactor < benchmarks[TEST_RPMS[0]][200].avg))
+        // Latency increased by LATENCY_MAX_FACTOR
+        (latestBenchMark[200].avg / LATENCY_MAX_FACTOR < benchmarks[TEST_RPMS[0]][200].avg))
 
     showTable(benchmarks);
 }
