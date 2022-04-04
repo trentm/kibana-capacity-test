@@ -146,13 +146,13 @@ function runIntervalsForDuration(rpm, configObject) {
                 process.stdout.write(`\n`);
                 intervalHandle && clearInterval(intervalHandle);
 
-                // setup a timer to abort after 15 seconds
+                // setup a timer to abort after 60 seconds
                 const abortTimeoutHandler = setTimeout(() => {
                     console.error('GLOBAL TIMEOUT')
                     cancelTokenSource.cancel();
                     reject(new Error(TOP_LEVEL_TIMEOUT));
                 },
-                    15 * 1000
+                    60 * 1000
                 );
 
                 const res = await getStatusCodesFromResponses(timingsPromises);
