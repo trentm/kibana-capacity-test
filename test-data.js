@@ -53,6 +53,10 @@ export const TEST_FILES = {
         method: 'GET',
         params: {},
     },
+    'shared-dll':{
+        url: `/${BUNDLE_ID}/bundles/kbn-ui-shared-deps-npm/kbn-ui-shared-deps-npm.dll.js`,
+        method: 'GET',
+    },
     'login-state': {
         url: '/internal/security/login_state',
         auth: false,

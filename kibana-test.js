@@ -4,7 +4,7 @@ import axios from 'axios';
 const INTERVAL_LENGTH_MINS = 0.5;
 const REQUESTS_PER_BATCH = 10;
 const LATENCY_MAX_FACTOR = 200;
-const TEST_RPMS = [500, 1000, 1200, 1500, 1800, 2000, 2200, 2500, 3000, 4000, 5000, 6000, 7000, 8000, 10000, 15000, 20000];
+const TEST_RPMS = [500, 1000, 3000, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 40000, 50000];
 
 const TOP_LEVEL_TIMEOUT = 'top level timeout';
 
@@ -134,16 +134,6 @@ function runIntervalsForDuration(rpm, configObject) {
         let intervalHandle = undefined;
         const cancelTokenSource = axios.CancelToken.source();
 
-        // abort after 30 seconds
-        const abortTimeoutHandler = setTimeout(() => {
-            console.error('GLOBAL TIMEOUT')
-            cancelTokenSource.cancel();
-            clearInterval(intervalHandle);
-            reject(new Error(TOP_LEVEL_TIMEOUT));
-        },
-            INTERVAL_LENGTH_MINS * 1.5 * 60000
-        );
-
         const intervalHandler = async () => {
             process.stdout.write(`Interval ${intervalCount}: ${Math.floor(intervalCount * intervalDurationSec* 10) / 10}s, ${REQUESTS_PER_BATCH*intervalCount} requests\r`);
             intervalCount++;
@@ -155,8 +145,20 @@ function runIntervalsForDuration(rpm, configObject) {
             if (timingsPromises.length >= requestsToRun) {
                 process.stdout.write(`\n`);
                 intervalHandle && clearInterval(intervalHandle);
-                clearTimeout(abortTimeoutHandler);
+
+                // setup a timer to abort after 15 seconds
+                const abortTimeoutHandler = setTimeout(() => {
+                    console.error('GLOBAL TIMEOUT')
+                    cancelTokenSource.cancel();
+                    reject(new Error(TOP_LEVEL_TIMEOUT));
+                },
+                    15 * 1000
+                );
+
                 const res = await getStatusCodesFromResponses(timingsPromises);
+
+                // clear the abort timer if all have returned
+                clearTimeout(abortTimeoutHandler);
                 resolve(res);
             } else if (!intervalHandle) {
                 intervalHandle = setInterval(intervalHandler, intervalDurationSec * 1000);                
