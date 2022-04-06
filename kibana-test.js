@@ -4,7 +4,7 @@ import axios from 'axios';
 const INTERVAL_LENGTH_MINS = 0.5;
 const REQUESTS_PER_BATCH = 10;
 const LATENCY_MAX_FACTOR = 200;
-const TEST_RPMS = [500, 1000, 3000, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 40000, 50000];
+const TEST_RPMS = [200, 500, 1000, 3000, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 40000, 50000];
 
 const TOP_LEVEL_TIMEOUT = 'top level timeout';
 
@@ -47,7 +47,7 @@ async function doLogin() {
     return cookie;
 }
 
-function getRequestPromise(configObject, cancelTokenSource) {
+function getRequestPromise(configObject, abortController) {
     const headers = {
         ...configObject.headers || {},
     };
@@ -57,7 +57,7 @@ function getRequestPromise(configObject, cancelTokenSource) {
         baseURL: BASE_PATH,
         method: configObject.method,
         url: configObject.url,
-        cancelToken: cancelTokenSource.token,
+        signal: abortController.signal,
         headers,
         ...(configObject.method === 'GET' ? {
             params: configObject.params || {},
@@ -131,15 +131,17 @@ function runIntervalsForDuration(rpm, configObject) {
     return new Promise(async (resolve, reject) => {
         let intervalCount = 0;
         const timingsPromises = [];
+        const abortControllers = [];
         let intervalHandle = undefined;
-        const cancelTokenSource = axios.CancelToken.source();
 
         const intervalHandler = async () => {
             process.stdout.write(`Interval ${intervalCount}: ${Math.floor(intervalCount * intervalDurationSec* 10) / 10}s, ${REQUESTS_PER_BATCH*intervalCount} requests\r`);
             intervalCount++;
 
             for (let i = 0; i < REQUESTS_PER_BATCH; i++) {
-                timingsPromises.push(getRequestPromise(configObject, cancelTokenSource));
+                const abortController = new AbortController();
+                abortControllers.push(abortController);
+                timingsPromises.push(getRequestPromise(configObject, abortController));
             }
 
             if (timingsPromises.length >= requestsToRun) {
@@ -149,8 +151,8 @@ function runIntervalsForDuration(rpm, configObject) {
                 // setup a timer to abort after 60 seconds
                 const abortTimeoutHandler = setTimeout(() => {
                     console.error('GLOBAL TIMEOUT')
-                    cancelTokenSource.cancel();
-                    reject(new Error(TOP_LEVEL_TIMEOUT));
+                    abortControllers.map(abortController => abortController.abort());
+                    // reject(new Error(TOP_LEVEL_TIMEOUT));
                 },
                     60 * 1000
                 );
@@ -219,7 +221,7 @@ async function initTest(testName = 'login') {
 
     // warm up
     console.log('Doing warm up')
-    await runIntervalsForDuration(500, testData);
+    await runIntervalsForDuration(100, testData);
 
     do {
         try {

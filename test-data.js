@@ -3,7 +3,7 @@
 export const BASE_PATH = 'https://performance-test.kb.us-central1.gcp.cloud.es.io:9243/';
 
 // Spencers off cloud instance
-// export const BASE_PATH = 'http://104.198.74.29';
+//export const BASE_PATH = 'http://34.136.67.157';
 
 
 const BUNDLE_ID = '50609';
@@ -70,7 +70,7 @@ export const TEST_FILES = {
         headers: DEFAULT_HEADERS,
         params: {
             providerType: "basic",
-            providerName: "cloud-basic",
+            providerName: "basic",
             currentURL: `${BASE_PATH}/login`,
             params: {
                 username: USERNAME,
