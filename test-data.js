@@ -1,6 +1,14 @@
 
 // Test server on cloud
-export const BASE_PATH = 'https://performance-test.kb.us-central1.gcp.cloud.es.io:9243/';
+//export const BASE_PATH = 'https://performance-test.kb.us-central1.gcp.cloud.es.io:9243/';
+
+// trentm-play-vm1
+// export const BASE_PATH = 'http://34.168.80.0';
+//export const BASE_PATH = 'http://10.138.0.3:5601'; // internal IP, don't rely on iptables port redirect
+
+// trentm-kibana-perf-n2d2
+//export const BASE_PATH = 'http://35.230.85.159';
+export const BASE_PATH = 'http://10.138.0.6:5601'; // internal IP, don't rely on iptables port redirect
 
 // Spencers off cloud instance
 //export const BASE_PATH = 'http://34.136.67.157';
@@ -11,13 +19,13 @@ const DEFAULT_HEADERS = {
     // "accept-encoding": "identity",
     "content-type": "application/json",
     "Connection": "keep-alive",
-    "kbn-version": "8.1.1",
+    "kbn-version": "8.2.3",
     "sec-fetch-mode": "cors",
     "sec-fetch-site": "same-origin"
 }
 
-const USERNAME = 'benchmark';
-const PASSWORD = 'markymark';
+const USERNAME = 'elastic';
+const PASSWORD = 'F0n7i18rKLnlsb2MONKbOJ63';
 
 export const TEST_FILES = {
     'cdn-file': {
